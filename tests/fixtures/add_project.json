@@ -1,0 +1,19 @@
+{
+   "created" : "2016-09-05T16:44:03.2172369+00:00",
+   "skipBranchesWithoutAppveyorYml" : false,
+   "repositoryName" : "booyaa/hello-homu",
+   "repositoryScm" : "git",
+   "alwaysBuildClosedPullRequests" : false,
+   "repositoryType" : "gitHub",
+   "name" : "hello-homu",
+   "enableDeploymentInPullRequests" : false,
+   "enableSecureVariablesInPullRequestsFromSameRepo" : false,
+   "accountId" : 45886,
+   "builds" : [],
+   "rollingBuilds" : false,
+   "enableSecureVariablesInPullRequests" : false,
+   "accountName" : "booyaa",
+   "slug" : "hello-homu",
+   "isPrivate" : false,
+   "projectId" : 231776
+}

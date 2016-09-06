@@ -8,5 +8,18 @@ documentation = "https://booyaa.github.io/happv/happv/index.html"
 readme = "README.md"
 keywords = ["AppVeyor","api","ci","pizza"]
 license = "Apache-2.0"
+build = "build.rs"
+
+[features]
+default = ["serde_codegen"]
+unstable = ["serde_macros"]
+
+[build-dependencies]
+serde_codegen = { version = "0.8", optional = true }
 
 [dependencies]
+hyper = "0.9.10"
+serde = "0.8"
+serde_json = "0.8"  # just for the example, not required in general
+serde_macros = { version = "0.8", optional = true }
+log = "0.3"
