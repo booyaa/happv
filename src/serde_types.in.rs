@@ -4,3 +4,14 @@ use serde::{de, Deserializer};
 pub struct ErrorResponse {
     message: String,
 }
+
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Project {
+    #[serde(rename = "projectId")]
+    project_id: usize,
+    #[serde(rename = "accountId")]
+    account_id: usize,
+    // builds : Vec<Build>,
+    slug: String,
+}
