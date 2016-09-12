@@ -70,31 +70,38 @@ impl AppVeyor {
         self.test_mode = true;
     }
 
+    /// Returns a list of Projects
     /// GET /api/projects
-    pub fn get_projects(&self) -> Vec<Project> {
+    pub fn get_projects(&self) -> Result<Vec<Project>, Error> {
+        let mut buffer: String;
+
         if self.test_mode == true {
-            let result = load_file("get_projects.json");
-            serde_json::from_str(&result).unwrap()
+            buffer = load_file("get_projects.json");
+            // serde_json::from_str(&result).unwrap()
         } else {
             let client = Client::new();
             let url = format!("{}{}", BASE_URL, BASE_PROJECTS);
             debug!("url: {}", url);
-            let mut res = client.get(&url)
-                                .header(Authorization({
-                                    Bearer { token: self.token.to_owned() }
-                                }))
-                                .send()
-                                .unwrap();
+            let mut res = try!(client.get(&url)
+                                     .header(Authorization({
+                                         Bearer { token: self.token.to_owned() }
+                                     }))
+                                     .send());
 
             if res.status != hyper::status::StatusCode::Ok {
-                panic!(res.status.to_string());
+                // panic!(res.status.to_string());
+                return Err(Error::BadStatus(res.status));
             }
 
-            let mut buffer = String::new();
-            res.read_to_string(&mut buffer).expect("no body");
+            // let mut buffer = String::new();
+            buffer = String::new();
+            try!(res.read_to_string(&mut buffer));
             debug!("buffer: {}", buffer);
-            serde_json::from_str(&buffer).unwrap()
+
         }
+
+        let result = try!(serde_json::from_str(&buffer));
+        Ok(result)
     }
 
     /// POST /api/projects
@@ -192,16 +199,16 @@ fn load_file(file: &str) -> String {
 
 
 #[test]
-#[ignore]
-fn should_return_project_list() {
+fn should_return_project_list_in_testmode() {
     let mut happv = AppVeyor::new("adsasd");
     happv.enable_test_mode();
 
-    let result = happv.get_projects();
+    let result = happv.get_projects().unwrap();
 
     assert_eq!(3, result.len());
+    println!("enumerate list:");
     for i in result.into_iter() {
-        println!("{}", i.slug);
+        println!("\trepo: {}", i.slug);
     }
 }
 
@@ -210,13 +217,14 @@ fn should_return_project_list() {
 fn integration_should_return_project_list() {
     let happv = AppVeyor::new(env!("APPVEYOR"));
 
-    let result = happv.get_projects();
+    let result = happv.get_projects().unwrap();
 
     assert!(0 < result.len());
     for i in result.into_iter() {
         println!("{}", i.slug);
     }
 }
+
 
 // --- These tests are temporary for sketching out error handling
 #[allow(dead_code)]
@@ -238,7 +246,7 @@ fn connection_refused() -> Result<String, Error> {
 }
 
 #[test]
-// #[ignore]
+#[ignore]
 fn should_be_connection_refused() {
     let result = connection_refused();
 
@@ -302,7 +310,7 @@ fn failed_to_decode() -> Result<Project, Error> {
 }
 
 #[test]
-// #[ignore]
+#[ignore]
 fn should_be_failed_to_decode() {
     let result = failed_to_decode();
 
