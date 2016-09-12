@@ -1,11 +1,24 @@
+//! A minimal AppVeyor API library in Rust.
+//!
+//! Warning: this is a partial implemented API of the AppVeyor REST [API][1]. I only needed the
+//! following end points:
+//!
+//! - Get a list of projects - /api/projects
+//! - Get the last build of a project - /api/projects/{accountName}/{projectSlug}
+//! - Add a project - /api/projects
+//! - Cancel a build - /api/builds/{accountName}/{projectSlug}/{buildVersion}
+//!
+//! [PRs][2] welcome if you want to implement other endpoints and/or the Build Worker API.
+
 //! Documentation: https://www.appveyor.com/docs/api/
 //!
-
-// - Get the last build of a project - /api/projects/{accountName}/{projectSlug}
-// curl --silent --header 'Authorization: Bearer '$APPVEYOR --request GET \
-//      https://ci.appveyor.com/api/projects/booyaa/hai
-//
-//
+//! https://gist.github.com/fredhsu/ae4088f905ac25bfcc04
+//! - Get the last build of a project - /api/projects/{accountName}/{projectSlug}
+//! curl --silent --header 'Authorization: Bearer '$APPVEYOR --request GET \
+//!      https://ci.appveyor.com/api/projects/booyaa/hai
+//!
+//! [1]: https://www.appveyor.com/docs/api/
+//! [2]: https://github.com/booyaa/happv/issues/new
 #![cfg_attr(feature = "serde_macros", feature(plugin, custom_derive))]
 #![cfg_attr(feature = "serde_macros", plugin(serde_macros))]
 
@@ -15,10 +28,13 @@ extern crate hyper;
 #[macro_use]
 extern crate log;
 
+pub mod error;
+
 use hyper::Client;
 use hyper::header::{Authorization, ContentType, Bearer};
 use hyper::mime::{Mime, TopLevel, SubLevel, Attr, Value};
 use std::io::Read;
+use error::Error;
 
 #[cfg(feature = "serde_macros")]
 include!("serde_types.in.rs");
@@ -26,79 +42,11 @@ include!("serde_types.in.rs");
 #[cfg(feature = "serde_codegen")]
 include!(concat!(env!("OUT_DIR"), "/serde_types.rs"));
 
-// const LIB_VERSION: &'static str = env!("CARGO_PKG_VERSION");
-// const LIB_NAME: &'static str = env!("CARGO_PKG_NAME");
-
-
 const BASE_URL: &'static str = "https://ci.appveyor.com/api/";
 const BASE_PROJECTS: &'static str = "projects";
-// const BASE_BUILDS: &'static str = "builds";
+#[allow(dead_code)]
+const BASE_BUILDS: &'static str = "builds";
 
-// errors
-// use std::{self, fmt};
-
-#[derive(Debug)]
-pub enum Error {
-    ///The response from Twitter gave a response code that indicated an error. The enclosed value
-    ///was the response code.
-    BadStatus(hyper::status::StatusCode),
-    ///The web request experienced an error. The enclosed value was returned from hyper.
-    NetError(hyper::error::Error),
-    ///An error was experienced while processing the response stream. The enclosed value was
-    ///returned from libstd.
-    IOError(std::io::Error),
-    // Failed to parse data as JSON
-    ParseError(serde_json::error::Error),
-}
-
-impl std::fmt::Display for Error {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        match *self {
-            Error::BadStatus(ref val) => write!(f, "Error status received: {}", val),
-            Error::NetError(ref err) => write!(f, "Network error: {}", err),
-            Error::IOError(ref err) => write!(f, "IO error: {}", err),
-            Error::ParseError(ref err) => write!(f, "Parsing error: {}", err),
-        }
-    }
-}
-
-impl std::error::Error for Error {
-    fn description(&self) -> &str {
-        match *self {
-            Error::BadStatus(_) => "Response included error code",
-            Error::NetError(ref err) => err.description(),
-            Error::IOError(ref err) => err.description(),
-            Error::ParseError(ref err) => err.description(),
-        }
-    }
-
-    fn cause(&self) -> Option<&std::error::Error> {
-        match *self {
-            Error::NetError(ref err) => Some(err),
-            Error::IOError(ref err) => Some(err),
-            Error::ParseError(ref err) => Some(err),
-            _ => None,
-        }
-    }
-}
-
-impl From<hyper::error::Error> for Error {
-    fn from(err: hyper::error::Error) -> Error {
-        Error::NetError(err)
-    }
-}
-
-impl From<std::io::Error> for Error {
-    fn from(err: std::io::Error) -> Error {
-        Error::IOError(err)
-    }
-}
-
-impl From<serde_json::error::Error> for Error {
-    fn from(err: serde_json::error::Error) -> Error {
-        Error::ParseError(err)
-    }
-}
 
 /// Main struct
 #[allow(dead_code)]
@@ -109,6 +57,7 @@ pub struct AppVeyor {
 }
 
 impl AppVeyor {
+    /// Creates a new AppVeyor session using the API token provided
     pub fn new(token: &str) -> AppVeyor {
         AppVeyor {
             token: token.to_string(),
@@ -116,25 +65,13 @@ impl AppVeyor {
         }
     }
 
+    /// Toggles test mode, primarily used for writing tests
     pub fn enable_test_mode(&mut self) {
         self.test_mode = true;
     }
 
-    /// Get a list of projects - /api/projects
-    ///
-    /// curl --silent --header 'Authorization: Bearer '$APPVEYOR --request GET \
-    ///         https://ci.appveyor.com/api/projects
-    ///
     /// GET /api/projects
     pub fn get_projects(&self) -> Vec<Project> {
-        // are we dev mode
-        // yes - read local file
-        // no - http
-        // parse
-        // return Vec<Project
-
-
-        println!("self: {:#?}", &self);
         if self.test_mode == true {
             let result = load_file("get_projects.json");
             serde_json::from_str(&result).unwrap()
@@ -160,15 +97,9 @@ impl AppVeyor {
         }
     }
 
-
-    /// Add a project - /api/projects
-    ///
-    /// curl --silent --header 'Authorization: Bearer '$APPVEYOR \
-    ///      --header 'Content-Type: application/json' \
-    ///      --request POST https://ci.appveyor.com/api/projects \
-    ///      -d '{"repositoryProvider" : "gitHub", "repositoryName" : "booyaa/hello-homu"}'
-    ///
     /// POST /api/projects
+    /// Body: {"repositoryProvider" : "gitHub", "repositoryName" : "booyaa/hello-homu"}
+    /// Incomplete
     pub fn add_project(&self) -> String {
         let client = Client::new();
         let url = format!("{}{}", BASE_URL, BASE_PROJECTS);
@@ -194,15 +125,12 @@ impl AppVeyor {
     }
 
 
-    /// Cancel a build - /api/builds/{accountName}/{projectSlug}/{buildVersion}
-    ///
-    /// curl --silent --header 'Authorization: Bearer '$APPVEYOR --request DELETE \
-    ///      https://ci.appveyor.com/api/builds/booyaa/hai/1.0.11
+    /// DELETE /api/builds/{accountName}/{projectSlug}/{buildVersion}
     ///
     /// error handling
     /// - build has already finished - will give you HTTP 500 and {"message":"The build has already finished."}
     ///
-    /// DELETE /api/builds/{accountName}/{projectSlug}/{buildVersion}
+    /// Incomplete
     pub fn cancel_build(&self) -> String {
         let client = Client::new();
         // let url = format!("{}{}", BASE_URL, "/delete");
@@ -264,7 +192,7 @@ fn load_file(file: &str) -> String {
 
 
 #[test]
-// #[ignore]
+#[ignore]
 fn should_return_project_list() {
     let mut happv = AppVeyor::new("adsasd");
     happv.enable_test_mode();
@@ -278,7 +206,7 @@ fn should_return_project_list() {
 }
 
 #[test]
-// #[ignore]
+#[ignore]
 fn integration_should_return_project_list() {
     let happv = AppVeyor::new(env!("APPVEYOR"));
 
@@ -290,6 +218,7 @@ fn integration_should_return_project_list() {
     }
 }
 
+// --- These tests are temporary for sketching out error handling
 #[allow(dead_code)]
 fn connection_refused() -> Result<String, Error> {
     let client = Client::new();
@@ -309,7 +238,7 @@ fn connection_refused() -> Result<String, Error> {
 }
 
 #[test]
-#[ignore]
+// #[ignore]
 fn should_be_connection_refused() {
     let result = connection_refused();
 
@@ -373,11 +302,10 @@ fn failed_to_decode() -> Result<Project, Error> {
 }
 
 #[test]
-#[ignore]
+// #[ignore]
 fn should_be_failed_to_decode() {
     let result = failed_to_decode();
 
     println!("Error: {:#?}", result);
     assert!(result.is_err());
-
 }
