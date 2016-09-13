@@ -248,7 +248,7 @@ fn should_return_project_list_in_testmode() {
 }
 
 #[test]
-// #[ignore] // integration test
+#[ignore] // integration test
 fn integration_should_return_project_list() {
     let happv = AppVeyor::new(env!("APPVEYOR"));
 
@@ -280,7 +280,7 @@ fn should_fail_to_add_project() {
 }
 
 #[test]
-// #[ignore] // integration test
+#[ignore] // integration test
 fn should_delete_project() {
     let happv = AppVeyor::new(env!("APPVEYOR"));
     let result = happv.delete_project("booyaa".to_string(), "hello-homu".to_string());
