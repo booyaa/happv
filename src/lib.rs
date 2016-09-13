@@ -142,6 +142,30 @@ impl AppVeyor {
         Ok(result)
     }
 
+    /// Deletes a project
+    /// DELETE /api/builds/{accountName}/{projectSlug}
+    pub fn delete_project(&self, account_name: String, project_slug: String) -> Result<(), Error> {
+        let client = Client::new();
+        let url = format!("{}{}/{}/{}",
+                          BASE_URL,
+                          BASE_PROJECTS,
+                          account_name,
+                          project_slug);
+        println!("url: {}", url);
+
+        let res = try!(client.delete(&url)
+                             .header(Authorization({
+                                 Bearer { token: self.token.to_owned() }
+                             }))
+                             .send());
+
+        println!("status: {:?}", res.status);
+        if res.status != hyper::status::StatusCode::NoContent {
+            return Err(Error::BadStatus(res.status));
+        }
+
+        Ok(())
+    }
 
     /// DELETE /api/builds/{accountName}/{projectSlug}/{buildVersion}
     ///
@@ -224,20 +248,21 @@ fn should_return_project_list_in_testmode() {
 }
 
 #[test]
-#[ignore]
+// #[ignore] // integration test
 fn integration_should_return_project_list() {
     let happv = AppVeyor::new(env!("APPVEYOR"));
 
     let result = happv.get_projects().unwrap();
 
     // assert(0 < result.len());
+    println!("enumerate list:");
     for i in result.into_iter() {
-        println!("{}", i.slug);
+        println!("\tId:{} Slug:{}", i.project_id, i.slug);
     }
 }
 
 #[test]
-#[ignore]
+#[ignore] // integration test
 fn should_add_project() {
     let happv = AppVeyor::new(env!("APPVEYOR"));
     let result = happv.add_project("gitHub".to_string(), "booyaa/hello-homu".to_string());
@@ -246,7 +271,7 @@ fn should_add_project() {
 }
 
 #[test]
-// #[ignore]
+#[ignore] // integration test
 fn should_fail_to_add_project() {
     let happv = AppVeyor::new(env!("APPVEYOR"));
     let result = happv.add_project("gitHub".to_string(), "booyaa/i_dont_exist".to_string());
@@ -254,6 +279,14 @@ fn should_fail_to_add_project() {
     println!("{:#?}", result.err()); // returns BadStatus::InternalServerError would prefer the message
 }
 
+#[test]
+// #[ignore] // integration test
+fn should_delete_project() {
+    let happv = AppVeyor::new(env!("APPVEYOR"));
+    let result = happv.delete_project("booyaa".to_string(), "hello-homu".to_string());
+    println!("{:#?}", result);
+    assert!(result.is_ok());
+}
 
 
 // --- These tests are temporary for sketching out error handling

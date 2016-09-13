@@ -15,6 +15,8 @@ pub struct Project {
     account_id: usize,
     // builds : Vec<Build>,
     slug: String,
+    #[serde(rename = "accountName")]
+    account_name: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
