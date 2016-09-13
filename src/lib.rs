@@ -247,136 +247,136 @@ fn should_return_project_list_in_testmode() {
     }
 }
 
-#[test]
-#[ignore] // integration test
-fn integration_should_return_project_list() {
-    let happv = AppVeyor::new(env!("APPVEYOR"));
-
-    let result = happv.get_projects().unwrap();
-
-    // assert(0 < result.len());
-    println!("enumerate list:");
-    for i in result.into_iter() {
-        println!("\tId:{} Slug:{}", i.project_id, i.slug);
-    }
-}
-
-#[test]
-#[ignore] // integration test
-fn should_add_project() {
-    let happv = AppVeyor::new(env!("APPVEYOR"));
-    let result = happv.add_project("gitHub".to_string(), "booyaa/hello-homu".to_string());
-    assert!(result.is_ok());
-    println!("{:#?}", result.unwrap());
-}
-
-#[test]
-#[ignore] // integration test
-fn should_fail_to_add_project() {
-    let happv = AppVeyor::new(env!("APPVEYOR"));
-    let result = happv.add_project("gitHub".to_string(), "booyaa/i_dont_exist".to_string());
-    assert!(result.is_err());
-    println!("{:#?}", result.err()); // returns BadStatus::InternalServerError would prefer the message
-}
-
-#[test]
-#[ignore] // integration test
-fn should_delete_project() {
-    let happv = AppVeyor::new(env!("APPVEYOR"));
-    let result = happv.delete_project("booyaa".to_string(), "hello-homu".to_string());
-    println!("{:#?}", result);
-    assert!(result.is_ok());
-}
-
-
-// --- These tests are temporary for sketching out error handling
-#[allow(dead_code)]
-fn connection_refused() -> Result<String, Error> {
-    let client = Client::new();
-    let url = format!("{}{}", "http://localhost:32769", "/headers");
-    debug!("url: {}", url);
-    let res = try!(client.get(&url)
-                         .header(Authorization({
-                             Bearer { token: "XXX".to_owned() }
-                         }))
-                         .send());
-
-    if res.status != hyper::status::StatusCode::Ok {
-        return Err(Error::BadStatus(res.status));
-        // panic!(res.status.to_string());
-    }
-    Ok("foo".to_string())
-}
-
-#[test]
-#[ignore]
-fn should_be_connection_refused() {
-    let result = connection_refused();
-
-    println!("Error: {:#?}", result);
-    assert!(result.is_err());
-
-}
-
-#[allow(dead_code)]
-fn bad_status() -> Result<String, Error> {
-    let client = Client::new();
-    let url = format!("{}{}", "http://localhost:32768", "/status/404");
-    debug!("url: {}", url);
-    let res = try!(client.get(&url)
-                         .header(Authorization({
-                             Bearer { token: "XXX".to_owned() }
-                         }))
-                         .send());
-
-    if res.status != hyper::status::StatusCode::Ok {
-        return Err(Error::BadStatus(res.status));
-    }
-    // let mut buffer = String::new();
-    // res.read_to_string(&mut buffer).expect("no body");
-    // debug!("buffer: {}", buffer);
-    // Ok(serde_json::from_str(&buffer).unwrap())
-    Ok("foo".to_string())
-}
-
-#[test]
-#[ignore]
-fn should_be_bad_status() {
-    let result = bad_status();
-
-    println!("Error: {:#?}", result);
-    assert!(result.is_err());
-
-}
-
-#[allow(dead_code)]
-fn failed_to_decode() -> Result<Project, Error> {
-    let client = Client::new();
-    let url = format!("{}{}", "http://localhost:32768", "/headers");
-    debug!("url: {}", url);
-    let mut res = try!(client.get(&url)
-                             .header(Authorization({
-                                 Bearer { token: "XXX".to_owned() }
-                             }))
-                             .send());
-
-    if res.status != hyper::status::StatusCode::Ok {
-        return Err(Error::BadStatus(res.status));
-    }
-
-    let mut buffer = String::new();
-    try!(res.read_to_string(&mut buffer));
-    println!("buffer: {}", buffer);
-
-    let result = try!(serde_json::from_str(&buffer));
-    Ok(result)
-}
-
-#[test]
-#[ignore]
-fn should_be_failed_to_decode() {
-    let result = failed_to_decode();
-
-    println!("Error: {:#?}", result);
-    assert!(result.is_err());
-}
+// #[test]
+// #[ignore] // integration test
+// fn integration_should_return_project_list() {
+//     let happv = AppVeyor::new(env!("APPVEYOR"));
+//
+//     let result = happv.get_projects().unwrap();
+//
+//     // assert(0 < result.len());
+//     println!("enumerate list:");
+//     for i in result.into_iter() {
+//         println!("\tId:{} Slug:{}", i.project_id, i.slug);
+//     }
+// }
+//
+// #[test]
+// #[ignore] // integration test
+// fn should_add_project() {
+//     let happv = AppVeyor::new(env!("APPVEYOR"));
+//     let result = happv.add_project("gitHub".to_string(), "booyaa/hello-homu".to_string());
+//     assert!(result.is_ok());
+//     println!("{:#?}", result.unwrap());
+// }
+//
+// #[test]
+// #[ignore] // integration test
+// fn should_fail_to_add_project() {
+//     let happv = AppVeyor::new(env!("APPVEYOR"));
+//     let result = happv.add_project("gitHub".to_string(), "booyaa/i_dont_exist".to_string());
+//     assert!(result.is_err());
+//     println!("{:#?}", result.err()); // returns BadStatus::InternalServerError would prefer the message
+// }
+//
+// #[test]
+// #[ignore] // integration test
+// fn should_delete_project() {
+//     let happv = AppVeyor::new(env!("APPVEYOR"));
+//     let result = happv.delete_project("booyaa".to_string(), "hello-homu".to_string());
+//     println!("{:#?}", result);
+//     assert!(result.is_ok());
+// }
+//
+//
+// // --- These tests are temporary for sketching out error handling
+// #[allow(dead_code)]
+// fn connection_refused() -> Result<String, Error> {
+//     let client = Client::new();
+//     let url = format!("{}{}", "http://localhost:32769", "/headers");
+//     debug!("url: {}", url);
+//     let res = try!(client.get(&url)
+//                          .header(Authorization({
+//                              Bearer { token: "XXX".to_owned() }
+//                          }))
+//                          .send());
+//
+//     if res.status != hyper::status::StatusCode::Ok {
+//         return Err(Error::BadStatus(res.status));
+//         // panic!(res.status.to_string());
+//     }
+//     Ok("foo".to_string())
+// }
+//
+// #[test]
+// #[ignore]
+// fn should_be_connection_refused() {
+//     let result = connection_refused();
+//
+//     println!("Error: {:#?}", result);
+//     assert!(result.is_err());
+//
+// }
+//
+// #[allow(dead_code)]
+// fn bad_status() -> Result<String, Error> {
+//     let client = Client::new();
+//     let url = format!("{}{}", "http://localhost:32768", "/status/404");
+//     debug!("url: {}", url);
+//     let res = try!(client.get(&url)
+//                          .header(Authorization({
+//                              Bearer { token: "XXX".to_owned() }
+//                          }))
+//                          .send());
+//
+//     if res.status != hyper::status::StatusCode::Ok {
+//         return Err(Error::BadStatus(res.status));
+//     }
+//     // let mut buffer = String::new();
+//     // res.read_to_string(&mut buffer).expect("no body");
+//     // debug!("buffer: {}", buffer);
+//     // Ok(serde_json::from_str(&buffer).unwrap())
+//     Ok("foo".to_string())
+// }
+//
+// #[test]
+// #[ignore]
+// fn should_be_bad_status() {
+//     let result = bad_status();
+//
+//     println!("Error: {:#?}", result);
+//     assert!(result.is_err());
+//
+// }
+//
+// #[allow(dead_code)]
+// fn failed_to_decode() -> Result<Project, Error> {
+//     let client = Client::new();
+//     let url = format!("{}{}", "http://localhost:32768", "/headers");
+//     debug!("url: {}", url);
+//     let mut res = try!(client.get(&url)
+//                              .header(Authorization({
+//                                  Bearer { token: "XXX".to_owned() }
+//                              }))
+//                              .send());
+//
+//     if res.status != hyper::status::StatusCode::Ok {
+//         return Err(Error::BadStatus(res.status));
+//     }
+//
+//     let mut buffer = String::new();
+//     try!(res.read_to_string(&mut buffer));
+//     println!("buffer: {}", buffer);
+//
+//     let result = try!(serde_json::from_str(&buffer));
+//     Ok(result)
+// }
+//
+// #[test]
+// #[ignore]
+// fn should_be_failed_to_decode() {
+//     let result = failed_to_decode();
+//
+//     println!("Error: {:#?}", result);
+//     assert!(result.is_err());
+// }
