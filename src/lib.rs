@@ -77,7 +77,6 @@ impl AppVeyor {
 
         if self.test_mode == true {
             buffer = load_file("get_projects.json");
-            // serde_json::from_str(&result).unwrap()
         } else {
             let client = Client::new();
             let url = format!("{}{}", BASE_URL, BASE_PROJECTS);
@@ -89,46 +88,58 @@ impl AppVeyor {
                                      .send());
 
             if res.status != hyper::status::StatusCode::Ok {
-                // panic!(res.status.to_string());
                 return Err(Error::BadStatus(res.status));
             }
 
-            // let mut buffer = String::new();
             buffer = String::new();
             try!(res.read_to_string(&mut buffer));
             debug!("buffer: {}", buffer);
-
         }
 
         let result = try!(serde_json::from_str(&buffer));
         Ok(result)
     }
 
+    /// Adds a project to AppVeyor
+    /// Warning: doesn't check if the repo's already been added
+    ///
     /// POST /api/projects
-    /// Body: {"repositoryProvider" : "gitHub", "repositoryName" : "booyaa/hello-homu"}
-    /// Incomplete
-    pub fn add_project(&self) -> String {
+    /// Error: 500! {"message":"Error reading repository details: HTTP GET to https://api.github.com/repos/booyaa/hello-homx returned 404: Not Found"}
+    pub fn add_project(&self,
+                       repository_provider: String,
+                       repository_name: String)
+                       -> Result<Project, Error> {
         let client = Client::new();
         let url = format!("{}{}", BASE_URL, BASE_PROJECTS);
         debug!("url: {}", url);
 
-        let mut res = client.post(&url)
-                            .header(ContentType(Mime(TopLevel::Application,
-                                                     SubLevel::Json,
-                                                     vec![(Attr::Charset, Value::Utf8)])))
-                            .body(r#"{"foo": "bar", "fizz": 123}"#)
-                            .send()
-                            .unwrap();
+        let project = AddProject {
+            repository_provider: repository_provider,
+            repository_name: repository_name,
+        };
+
+        let body_json = try!(serde_json::to_string(&project));
+        debug!("body_json: {:?}", body_json);
+        let mut res = try!(client.post(&url)
+                                 .header(Authorization({
+                                     Bearer { token: self.token.to_owned() }
+                                 }))
+                                 .header(ContentType(Mime(TopLevel::Application,
+                                                          SubLevel::Json,
+                                                          vec![(Attr::Charset, Value::Utf8)])))
+                                 .body(&body_json)
+                                 .send());
 
         if res.status != hyper::status::StatusCode::Ok {
-            panic!(res.status.to_string());
+            return Err(Error::BadStatus(res.status)); // FIXME: will return early, so we lose the error message from AppVeyor
         }
 
         let mut buffer = String::new();
-        res.read_to_string(&mut buffer).expect("no body");
+        try!(res.read_to_string(&mut buffer));
         debug!("buffer: {}", buffer);
 
-        buffer
+        let result = try!(serde_json::from_str(&buffer));
+        Ok(result)
     }
 
 
@@ -219,11 +230,30 @@ fn integration_should_return_project_list() {
 
     let result = happv.get_projects().unwrap();
 
-    assert!(0 < result.len());
+    // assert(0 < result.len());
     for i in result.into_iter() {
         println!("{}", i.slug);
     }
 }
+
+#[test]
+#[ignore]
+fn should_add_project() {
+    let happv = AppVeyor::new(env!("APPVEYOR"));
+    let result = happv.add_project("gitHub".to_string(), "booyaa/hello-homu".to_string());
+    assert!(result.is_ok());
+    println!("{:#?}", result.unwrap());
+}
+
+#[test]
+// #[ignore]
+fn should_fail_to_add_project() {
+    let happv = AppVeyor::new(env!("APPVEYOR"));
+    let result = happv.add_project("gitHub".to_string(), "booyaa/i_dont_exist".to_string());
+    assert!(result.is_err());
+    println!("{:#?}", result.err()); // returns BadStatus::InternalServerError would prefer the message
+}
+
 
 
 // --- These tests are temporary for sketching out error handling

@@ -16,3 +16,11 @@ pub struct Project {
     // builds : Vec<Build>,
     slug: String,
 }
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct AddProject {
+    #[serde(rename = "repositoryProvider")]
+    repository_provider: String,
+    #[serde(rename = "repositoryName")]
+    repository_name: String,
+}
