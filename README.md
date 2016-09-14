@@ -21,7 +21,6 @@ The following have not yet been implemented:
 
 Full documentation can be found [here][3].
 
-
 # Usage
 
 This crate is on [crates.io][4] and can be used by adding `happv` to the dependencies in your project's `Cargo.toml`.
