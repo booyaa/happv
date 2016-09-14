@@ -1,9 +1,10 @@
+#[doc(hidden)]
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ErrorResponse {
     message: String,
 }
 
-
+/// Partial implementation of response return by the Projects endpoint
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Project {
     #[serde(rename = "projectId")]
@@ -15,6 +16,7 @@ pub struct Project {
     pub account_name: String,
 }
 
+#[doc(hidden)]
 #[derive(Serialize, Deserialize, Debug)]
 pub struct AddProject {
     #[serde(rename = "repositoryProvider")]
